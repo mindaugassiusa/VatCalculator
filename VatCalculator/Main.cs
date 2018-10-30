@@ -1,5 +1,4 @@
-﻿using System;
-using VatCalculator.Interfaces;
+﻿using VatCalculator.Interfaces;
 
 namespace VatCalculator
 {

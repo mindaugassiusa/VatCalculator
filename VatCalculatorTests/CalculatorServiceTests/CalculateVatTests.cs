@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using NSubstitute;
-using NSubstitute.ExceptionExtensions;
 using Shouldly;
 using VatCalculator.Interfaces;
 using VatCalculator.Models;
@@ -18,29 +15,6 @@ namespace VatCalculatorTests.CalculatorServiceTests
         protected readonly CalculatorService _calculatorService;
         protected readonly IDataService _dataService;
 
-        public static readonly List<Country> _mockedCountries = new List<Country>()
-        {
-            new Country {Id = 1, Name = "Lithuania", Vat = 21, IsEuMember = true},
-            new Country {Id = 2, Name = "Great Britain", Vat = 20, IsEuMember = false},
-            new Country {Id = 3, Name = "Germany", Vat = 19, IsEuMember = true},
-            new Country {Id = 4, Name = "Latvia", Vat = 21, IsEuMember = true},
-        };
-
-        public static readonly List<Customer> _mockedCustomers = new List<Customer>()
-        {
-            new Customer{Id = 1, Name = "Maxima", IsCompany = true, IsVatPayer = true, Country = _mockedCountries.FirstOrDefault(x => x.Id == 1)},
-            new Customer{Id = 2, Name = "Petras Petraitis", IsCompany = false, IsVatPayer = true, Country = _mockedCountries.FirstOrDefault(x => x.Id == 4)},
-            new Customer{Id = 3, Name = "John Johnson", IsCompany = false, IsVatPayer = false, Country = _mockedCountries.FirstOrDefault(x => x.Id == 2)},
-            new Customer{Id = 4, Name = "Pro Alpha", IsCompany = true, IsVatPayer = false, Country = _mockedCountries.FirstOrDefault(x => x.Id == 3)},
-            new Customer{Id = 5, Name = "Tomas Tomaitis", IsCompany = false, IsVatPayer = false, Country = _mockedCountries.FirstOrDefault(x => x.Id == 1)},
-        };
-
-        public static readonly List<Provider> _mockedProviders = new List<Provider>()
-        {
-            new Provider{Id = 1, Name = "Senukai", IsVatPayer = true, Country = _mockedCountries.FirstOrDefault(x => x.Id == 1)},
-            new Provider{Id = 2, Name = "Lidl", IsVatPayer = false, Country = _mockedCountries.FirstOrDefault(x => x.Id == 1)},
-        };
-
         public CalculateVatTests()
         {
             _dataService = Substitute.For<IDataService>();
@@ -50,14 +24,46 @@ namespace VatCalculatorTests.CalculatorServiceTests
         [Fact]
         public void ShouldReturnZeroWhenProviderIsNotVatPayer()
         {
-            var customerId = 1;
-            var providerId = 2;
+            var customer = new Customer()
+            {
+                Id = 1,
+                Name = "Maxima",
+                IsCompany = true,
+                IsVatPayer = true,
+                Country = new Country
+                {
+                    Id = 1,
+                    Name = "Lithuania",
+                    CountryInformation = new CountryInformation
+                    {
+                        IsEuMember = true,
+                        Vat = 21,
+                    }
+                }
+            };
+
+            var provider = new Provider
+            {
+                Id = 2,
+                Name = "Lidl",
+                IsVatPayer = false,
+                Country = new Country
+                {
+                    Id = 1,
+                    Name = "Lithuania",
+                    CountryInformation = new CountryInformation
+                    {
+                        IsEuMember = true,
+                        Vat = 21,
+                    }
+                }
+            };
             var amount = 1000;
 
-            _dataService.GetCustomerById(customerId).Returns(_mockedCustomers.FirstOrDefault(x => x.Id == customerId));
-            _dataService.GetProviderById(providerId).Returns(_mockedProviders.FirstOrDefault(x => x.Id == providerId));
+            _dataService.GetCustomerById(customer.Id).Returns(customer);
+            _dataService.GetProviderById(provider.Id).Returns(provider);
 
-            var result = _calculatorService.CalculateVat(customerId, providerId, amount);
+            var result = _calculatorService.CalculateVat(customer.Id, provider.Id, amount);
 
             result.ShouldBe(0);
         }
@@ -65,14 +71,46 @@ namespace VatCalculatorTests.CalculatorServiceTests
         [Fact]
         public void ShouldReturnZeroWhenProviderIsVatPayerAndCustomerCountryIsNotEuMemberAndCustomerAndProviderCountriesAreDifferent()
         {
-            var customerId = 3;
-            var providerId = 1;
+            var customer = new Customer()
+            {
+                Id = 3,
+                Name = "John Johnson",
+                IsCompany = false,
+                IsVatPayer = false,
+                Country = new Country
+                {
+                    Id = 2,
+                    Name = "Great Britain",
+                    CountryInformation = new CountryInformation
+                    {
+                        IsEuMember = false,
+                        Vat = 20,
+                    }
+                }
+            };
+
+            var provider = new Provider
+            {
+                Id = 1,
+                Name = "Senukai",
+                IsVatPayer = true,
+                Country = new Country
+                {
+                    Id = 1,
+                    Name = "Lithuania",
+                    CountryInformation = new CountryInformation
+                    {
+                        IsEuMember = true,
+                        Vat = 21,
+                    }
+                }
+            };
             var amount = 1000;
 
-            _dataService.GetCustomerById(customerId).Returns(_mockedCustomers.FirstOrDefault(x => x.Id == customerId));
-            _dataService.GetProviderById(providerId).Returns(_mockedProviders.FirstOrDefault(x => x.Id == providerId));
+            _dataService.GetCustomerById(customer.Id).Returns(customer);
+            _dataService.GetProviderById(provider.Id).Returns(provider);
 
-            var result = _calculatorService.CalculateVat(customerId, providerId, amount);
+            var result = _calculatorService.CalculateVat(customer.Id, provider.Id, amount);
 
             result.ShouldBe(0);
         }
@@ -80,14 +118,45 @@ namespace VatCalculatorTests.CalculatorServiceTests
         [Fact]
         public void ShouldReturnZeroWhenCustomerCountryIsEuMemberAndCustomerIsVatPayerAndCustomerAndProviderCountriesAreDifferent()
         {
-            var customerId = 2;
-            var providerId = 1;
+            var customer = new Customer()
+            {
+                Id = 2,
+                Name = "Petras Petraitis",
+                IsCompany = false,
+                IsVatPayer = true,
+                Country = new Country
+                {
+                    Id = 4,
+                    Name = "Latvia",
+                    CountryInformation = new CountryInformation
+                    {
+                        IsEuMember = true,
+                        Vat = 21,
+                    }
+                }
+            };
+            var provider = new Provider
+            {
+                Id = 1,
+                Name = "Senukai",
+                IsVatPayer = true,
+                Country = new Country
+                {
+                    Id = 1,
+                    Name = "Lithuania",
+                    CountryInformation = new CountryInformation
+                    {
+                        IsEuMember = true,
+                        Vat = 21,
+                    }
+                }
+            };
             var amount = 1000;
 
-            _dataService.GetCustomerById(customerId).Returns(_mockedCustomers.FirstOrDefault(x => x.Id == customerId));
-            _dataService.GetProviderById(providerId).Returns(_mockedProviders.FirstOrDefault(x => x.Id == providerId));
+            _dataService.GetCustomerById(customer.Id).Returns(customer);
+            _dataService.GetProviderById(provider.Id).Returns(provider);
 
-            var result = _calculatorService.CalculateVat(customerId, providerId, amount);
+            var result = _calculatorService.CalculateVat(customer.Id, provider.Id, amount);
 
             result.ShouldBe(0);
         }
@@ -95,14 +164,45 @@ namespace VatCalculatorTests.CalculatorServiceTests
         [Fact]
         public void ShouldReturnCalculatedVatWhenCustomerCountryIsEuMemberAndCustomerIsNotVatPayerAndCustomerAndProviderCountriesAreDifferent()
         {
-            var customerId = 4;
-            var providerId = 1;
+            var customer = new Customer()
+            {
+                Id = 4,
+                Name = "Pro Alpha",
+                IsCompany = true,
+                IsVatPayer = false,
+                Country = new Country
+                {
+                    Id = 3,
+                    Name = "Germany",
+                    CountryInformation = new CountryInformation
+                    {
+                        IsEuMember = true,
+                        Vat = 19,
+                    }
+                }
+            };
+            var provider = new Provider
+            {
+                Id = 1,
+                Name = "Senukai",
+                IsVatPayer = true,
+                Country = new Country
+                {
+                    Id = 1,
+                    Name = "Lithuania",
+                    CountryInformation = new CountryInformation
+                    {
+                        IsEuMember = true,
+                        Vat = 21,
+                    }
+                }
+            };
             var amount = 1000;
 
-            _dataService.GetCustomerById(customerId).Returns(_mockedCustomers.FirstOrDefault(x => x.Id == customerId));
-            _dataService.GetProviderById(providerId).Returns(_mockedProviders.FirstOrDefault(x => x.Id == providerId));
+            _dataService.GetCustomerById(customer.Id).Returns(customer);
+            _dataService.GetProviderById(provider.Id).Returns(provider);
 
-            var result = _calculatorService.CalculateVat(customerId, providerId, amount);
+            var result = _calculatorService.CalculateVat(customer.Id, provider.Id, amount);
 
             result.ShouldBe(190);
         }
@@ -110,14 +210,45 @@ namespace VatCalculatorTests.CalculatorServiceTests
         [Fact]
         public void ShouldCalculateVatWhenCustomerAndProviderCountriesAreTheSame()
         {
-            var customerId = 1;
-            var providerId = 1;
+            var customer = new Customer()
+            {
+                Id = 1,
+                Name = "Maxima",
+                IsCompany = true,
+                IsVatPayer = true,
+                Country = new Country
+                {
+                    Id = 1,
+                    Name = "Lithuania",
+                    CountryInformation = new CountryInformation
+                    {
+                        IsEuMember = true,
+                        Vat = 21,
+                    }
+                }
+            };
+            var provider = new Provider
+            {
+                Id = 1,
+                Name = "Senukai",
+                IsVatPayer = true,
+                Country = new Country
+                {
+                    Id = 1,
+                    Name = "Lithuania",
+                    CountryInformation = new CountryInformation
+                    {
+                        IsEuMember = true,
+                        Vat = 21,
+                    }
+                }
+            };
             var amount = 2000;
 
-            _dataService.GetCustomerById(customerId).Returns(_mockedCustomers.FirstOrDefault(x => x.Id == customerId));
-            _dataService.GetProviderById(providerId).Returns(_mockedProviders.FirstOrDefault(x => x.Id == providerId));
+            _dataService.GetCustomerById(customer.Id).Returns(customer);
+            _dataService.GetProviderById(provider.Id).Returns(provider);
 
-            var result = _calculatorService.CalculateVat(customerId, providerId, amount);
+            var result = _calculatorService.CalculateVat(customer.Id, provider.Id, amount);
 
             result.ShouldBe(420);
         }
@@ -125,40 +256,133 @@ namespace VatCalculatorTests.CalculatorServiceTests
         [Fact]
         public void ShouldThrowExceptionWhenCustomerIsZero()
         {
-            var customerId = 0;
-            var providerId = 1;
+            var customer = new Customer()
+            {
+                Id = 0,
+                Name = "",
+                IsCompany = true,
+                IsVatPayer = true,
+                Country = new Country
+                {
+                    Id = 0,
+                    Name = "",
+                    CountryInformation = new CountryInformation
+                    {
+                        IsEuMember = true,
+                        Vat = 0,
+                    }
+                }
+            };
+            var provider = new Provider
+            {
+                Id = 1,
+                Name = "Senukai",
+                IsVatPayer = true,
+                Country = new Country
+                {
+                    Id = 1,
+                    Name = "Lithuania",
+                    CountryInformation = new CountryInformation
+                    {
+                        IsEuMember = true,
+                        Vat = 21,
+                    }
+                }
+            };
             var amount = 1000;
 
-            _dataService.GetCustomerById(customerId).Returns(_mockedCustomers.FirstOrDefault(x => x.Id == customerId));
-            _dataService.GetProviderById(customerId).Returns(_mockedProviders.FirstOrDefault(x => x.Id == customerId));
+            _dataService.GetCustomerById(customer.Id).Returns(customer);
+            _dataService.GetProviderById(provider.Id).Returns(provider);
 
-            Should.Throw<Exception>(() => _calculatorService.CalculateVat(customerId, providerId, amount));
+            Should.Throw<Exception>(() => _calculatorService.CalculateVat(customer.Id, provider.Id, amount));
         }
 
         [Fact]
         public void ShouldThrowExceptionWhenProviderIsZero()
         {
-            var customerId = 1;
-            var providerId = 0;
+            var customer = new Customer()
+            {
+                Id = 1,
+                Name = "Maxima",
+                IsCompany = true,
+                IsVatPayer = true,
+                Country = new Country
+                {
+                    Id = 1,
+                    Name = "Lithuania",
+                    CountryInformation = new CountryInformation
+                    {
+                        IsEuMember = true,
+                        Vat = 21,
+                    }
+                }
+            };
+            var provider = new Provider
+            {
+                Id = 0,
+                Name = "",
+                IsVatPayer = true,
+                Country = new Country
+                {
+                    Id = 0,
+                    Name = "",
+                    CountryInformation = new CountryInformation
+                    {
+                        IsEuMember = true,
+                        Vat = 0,
+                    }
+                }
+            };
             var amount = 1000;
 
-            _dataService.GetCustomerById(customerId).Returns(_mockedCustomers.FirstOrDefault(x => x.Id == customerId));
-            _dataService.GetProviderById(customerId).Returns(_mockedProviders.FirstOrDefault(x => x.Id == customerId));
+            _dataService.GetCustomerById(customer.Id).Returns(customer);
+            _dataService.GetProviderById(provider.Id).Returns(provider);
 
-            Should.Throw<Exception>(() => _calculatorService.CalculateVat(customerId, providerId, amount));
+            Should.Throw<Exception>(() => _calculatorService.CalculateVat(customer.Id, provider.Id, amount));
         }
 
         [Fact]
         public void ShouldThrowExceptionWhenAmountIsZero()
         {
-            var customerId = 1;
-            var providerId = 1;
+            var customer = new Customer()
+            {
+                Id = 1,
+                Name = "Maxima",
+                IsCompany = true,
+                IsVatPayer = true,
+                Country = new Country
+                {
+                    Id = 1,
+                    Name = "Lithuania",
+                    CountryInformation = new CountryInformation
+                    {
+                        IsEuMember = true,
+                        Vat = 21,
+                    }
+                }
+            };
+            var provider = new Provider
+            {
+                Id = 1,
+                Name = "Senukai",
+                IsVatPayer = true,
+                Country = new Country
+                {
+                    Id = 1,
+                    Name = "Lithuania",
+                    CountryInformation = new CountryInformation
+                    {
+                        IsEuMember = true,
+                        Vat = 21,
+                    }
+                }
+            };
             var amount = 0;
 
-            _dataService.GetCustomerById(customerId).Returns(_mockedCustomers.FirstOrDefault(x => x.Id == customerId));
-            _dataService.GetProviderById(customerId).Returns(_mockedProviders.FirstOrDefault(x => x.Id == customerId));
+            _dataService.GetCustomerById(customer.Id).Returns(customer);
+            _dataService.GetProviderById(provider.Id).Returns(provider);
 
-            Should.Throw<Exception>(() => _calculatorService.CalculateVat(customerId, providerId, amount));
+            Should.Throw<Exception>(() => _calculatorService.CalculateVat(customer.Id, provider.Id, amount));
         }
     }  
 }

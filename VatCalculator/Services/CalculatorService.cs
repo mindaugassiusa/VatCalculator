@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using VatCalculator.Interfaces;
 
 namespace VatCalculator.Services
@@ -25,16 +23,16 @@ namespace VatCalculator.Services
             var provider = _dataService.GetProviderById(providerId);
 
             if (!provider.IsVatPayer
-                || (provider.IsVatPayer && !customer.Country.IsEuMember && provider.Country != customer.Country)
-                || (customer.Country.IsEuMember && customer.IsVatPayer && provider.Country != customer.Country))
+                || (provider.IsVatPayer && !customer.Country.CountryInformation.IsEuMember && provider.Country != customer.Country)
+                || (customer.Country.CountryInformation.IsEuMember && customer.IsVatPayer && provider.Country.Id != customer.Country.Id))
             {
                 return 0;
             }
 
-            if ((customer.Country.IsEuMember && !customer.IsVatPayer && provider.Country != customer.Country)
-                || (customer.Country == provider.Country))
+            if ((customer.Country.CountryInformation.IsEuMember && !customer.IsVatPayer && provider.Country.Id != customer.Country.Id)
+                || (customer.Country.Id == provider.Country.Id))
             {
-                var result = Decimal.Multiply(amount, customer.Country.Vat) / 100;
+                var result = Decimal.Multiply(amount, customer.Country.CountryInformation.Vat) / 100;
 
                 return result;
             }

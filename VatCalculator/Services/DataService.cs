@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using VatCalculator.Interfaces;
 using VatCalculator.Models;
 
@@ -11,10 +9,10 @@ namespace VatCalculator.Services
     {
         public static readonly List<Country> _countries = new List<Country>()
         {
-            new Country {Id = 1, Name = "Lithuania", Vat = 21, IsEuMember = true},
-            new Country {Id = 2, Name = "USA", Vat = 20, IsEuMember = false},
-            new Country {Id = 3, Name = "Germany", Vat = 19, IsEuMember = true},
-            new Country {Id = 4, Name = "Latvia", Vat = 21, IsEuMember = true},
+            new Country {Id = 1, Name = "Lithuania", CountryInformation = {IsEuMember = true, Vat = 21}},
+            new Country {Id = 2, Name = "USA", CountryInformation = {IsEuMember = false, Vat = 20}},
+            new Country {Id = 3, Name = "Germany", CountryInformation = {IsEuMember = false, Vat = 19}},
+            new Country {Id = 4, Name = "Latvia", CountryInformation = {IsEuMember = false, Vat = 21}},
         };
         public static readonly List<Customer> _customers = new List<Customer>()
         {

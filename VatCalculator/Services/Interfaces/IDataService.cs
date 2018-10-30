@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using VatCalculator.Models;
+﻿using VatCalculator.Models;
 
 namespace VatCalculator.Interfaces
 {
